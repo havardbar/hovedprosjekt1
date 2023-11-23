@@ -1,11 +1,6 @@
 #include <Arduino.h>
 #include <Zumo32U4.h>
-#include <Zumo32u4IRsender.h>
 
-#define DEVICE_ID 0x01
-#define DIRECTION RIGHT_IR
-
-Zumo32U4IRsender ZumoIrSender(42, RIGHT_IR);
 Zumo32U4LineSensors lineSensors;
 Zumo32U4Motors motros;
 Zumo32U4OLED display;
@@ -14,7 +9,7 @@ Zumo32U4ButtonA buttonA;
 Zumo32U4ButtonB buttonB;
 Zumo32U4ButtonC buttonC;
 Zumo32U4Buzzer buzzer; 
-Zumo32U4ProximitySensors proxSensors;
+
 
 int mode = 0;
 
@@ -29,6 +24,7 @@ float lengde_kjort = 0;
 //Batteri funksjoner
 float batteri = 100;
 float hastighet = 0;
+
 
 // heihei pål ser du meg
 
@@ -188,7 +184,9 @@ void rounds(){
 void distance(){
   count_left = encoder.getCountsLeft();
   count_right = encoder.getCountsRight();
-  
+
+  count_distance = ((count_left + count_right)/2)/7625;  // 7625 er ca 1 m, man litt under da
+
  // Beregn Counts og Distanse basert på forskjellen mellom nåværende og forrige verdi
   float CountsDiffV = count_left - forrige_motor_v;
   float CountsDiffH = count_right - forrige_motor_h;
@@ -207,22 +205,14 @@ void distance(){
 
   float Counts = (CountsDiffV + CountsDiffH) / 2;
   float Distanse = Diameter * Pi * Counts / antall_rotasjon;
- 
   
   if (Counts > 0) {
     lengde_kjort = lengde_kjort + Distanse;
   } else {
     lengde_kjort = lengde_kjort - Distanse;
   }
-
   forrige_motor_h = count_right;
-  forrige_motor_v = count_left;
-  
-  display.gotoXY(3,0);
-  display.println(lengde_kjort);
-  display.gotoXY(5,1);  
-  display.println(count_right);
-  
+  forrige_motor_v = count_left;  
 }
 
 void batteri_utladning(){
@@ -243,34 +233,26 @@ buzzer.playFrequency(20, 200, 15);
 }
   
 }
-
-
 // funksjon som restarter tellingen.
 void resetdistance(){
    if (reset == 1){
     encoder.getCountsAndResetLeft();
     encoder.getCountsAndResetRight();
-
     count_left = encoder.getCountsLeft();
     count_right = encoder.getCountsRight();
     count_distance = ((count_left + count_right)/2)/7625; //legger inn count distance for å kunne starte på sq_mode 0.
-
     motros.setSpeeds(0,0);
-
-    
     currentmillis_restart = millis(); // bruker millis istede for delay()
     if (currentmillis_restart - previusmilllis_restart >= time_restart){
       reset = 0;
     }
   }
 }
-
-
 // funskjon for bilen til å kjøre i firkanter
 void square(){
-
+  
   distance();
-
+  batteri_utladning();
   switch (sq_mode)
   {
 
@@ -288,9 +270,7 @@ void square(){
     }
     break;
 
-
 case 1:
-
   resetdistance();  // henter inn resetdistance funksjonen
   if (reset == 0){
     motros.setSpeeds(speed*(-1), speed*(1)); // får bilen til å snu
@@ -301,7 +281,6 @@ case 1:
     reset = 1;
     previusmilllis_restart = millis();
   }
-
   break;
 }
 }
@@ -314,13 +293,14 @@ void circle(){
 
 void turningopperation(){
     distance();
+    
 
   switch (turning)
   {
 
   case 0:
     resetdistance(); // henter inn resetdistance funksjonen
-
+    
     motros.setSpeeds(speed,speed); // setter farten rett frem
 
     if (count_distance >= 0.3){ // når bilen har kjørt en hvis lengde bytter den modus.
@@ -331,11 +311,8 @@ void turningopperation(){
 
 
 case 1:
-
   resetdistance();  // henter inn resetdistance funksjonen
-
   motros.setSpeeds(speed*(-1), speed*(1)); // får bilen til å snu
-
   if (count_right >= 1200){ // når bilen har snudd 180 grader byttes modus, når farten er 100 snus den på 600
     turning = 0;
     reset = 1;
@@ -391,9 +368,9 @@ void show(){
   //display.gotoXY(0,0);
   //display.println(rounds_N);
   display.gotoXY(3,0);
-  display.println(lineSensorValues[2]);
+  display.println(lengde_kjort);
   display.gotoXY(5,1);  
-  display.println(lineSensorValues[4]);
+  display.println(batteri);
   display.gotoXY(0,1);
   display.println(lineSensorValues[0]);
   display.gotoXY(5,2);
@@ -456,6 +433,7 @@ void main_mode(){
     steeringPID();
     rounds();
     change_mode();
+    batteri_utladning();
     break;
 
   case 1:
@@ -471,22 +449,5 @@ void main_mode(){
 }
 
 void loop() {
-  distance();
-  resetdistance();
-  battery_under5();
-  motros.setSpeeds(50, 50);
-  batteri_utladning();
-  ZumoIrSender.send(0x11);
-  
-
-  /*display.gotoXY(0,1);
-  display.println(lineSensorValues[0]);
-  display.gotoXY(5,2);
-  display.println(lineSensorValues[3]);
-  display.gotoXY(0,2);
-  display.println(lineSensorValues[1]);
-  display.gotoXY(0,3);
-  display.println(mode);*/
+ main_mode();
  }
-
-// fiks debaunce knapper A og B.
