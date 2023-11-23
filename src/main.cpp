@@ -11,6 +11,10 @@ Zumo32U4ButtonC buttonC;
 
 int mode = 0;
 
+
+
+// heihei pål ser du meg
+
 //
 // linjefølger:
 //
