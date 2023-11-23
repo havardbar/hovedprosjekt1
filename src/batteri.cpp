@@ -229,7 +229,7 @@ void batteri_utladning(){
 void battery_under5(){
 batteri_utladning();
 if (batteri < 5){
-buzzer.playFrequency(20, 200, 15);
+buzzer.playFrequency(400, 200, 15);
 }
   
 }
@@ -434,6 +434,7 @@ void main_mode(){
     rounds();
     change_mode();
     batteri_utladning();
+    battery_under5();
     break;
 
   case 1:
