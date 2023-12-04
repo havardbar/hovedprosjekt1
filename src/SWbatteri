@@ -1,0 +1,208 @@
+// Zumo32U4
+#include <Wire.h>
+#include <Zumo32U4.h>
+
+Zumo32U4Motors motors;
+Zumo32U4ButtonA buttonA;
+Zumo32U4Encoders encoders;
+Zumo32U4OLED display; 
+
+int lengde_kjort_siden_ladning = 0;
+int antall_ladninger= 0;
+unsigned long tid_kjort = 0;
+
+const int maxSpeed = 150;
+int lastError = 0;
+int modus= 3; 
+//millis funksjoner forå få kode uten delay
+unsigned long previousMillis = 0; 
+unsigned long previousMillis2 = 0;
+unsigned long previousMillis3 = 0;
+unsigned long previousMillis4 = 0;
+unsigned long previousdisplay = 0;
+
+const long interval = 2000;
+const long interval2 = 3000;
+const long displayinterval = 1500;
+
+//Tall for beregning av lengde
+const float Diameter = 3.5; 
+const int   antall_rotasjon = 910;  // Tall  
+const float Pi = 3.14159; 
+
+//Tall for beregning av batterietet 
+float batteriet = 100;
+float lengde_kjort = 0;
+
+//Startverdi for motoren
+long motor_h = 0;
+long motor_v = 0;
+long forrige_motor_h = 0;
+long forrige_motor_v = 0;
+float CountsDiffV = 0;
+float CountsDiffH = 0;
+float snitt_hastighet = 0;
+float Speed = 0;
+
+int knappe_teller = 0; 
+unsigned long lastDebounceTime = 0; 
+unsigned long debounceDelay = 50;
+
+void setup()
+{  
+}
+
+void encoder() {
+  motor_v = encoders.getCountsLeft();
+  motor_h = encoders.getCountsRight();
+  // Beregn Counts og Distanse basert på forskjellen mellom nåværende og forrige verdi
+  CountsDiffV = motor_v - forrige_motor_v;
+  CountsDiffH = motor_h - forrige_motor_h;
+  if (CountsDiffV > 30000) {
+    CountsDiffV -= 65536;  // Håndter overgangen til negativ verdi
+  } else if (CountsDiffV < -30000) {
+    CountsDiffV += 65536;  // Håndter overgangen til positiv verdi
+  }
+  if (CountsDiffH > 30000) {
+    CountsDiffH -= 65536;  // Håndter overgangen til negativ verdi
+  } else if (CountsDiffH < -30000) {
+    CountsDiffH += 65536;  // Håndter overgangen til positiv verdi
+  }
+}
+
+void knappe_teller_funk(){
+ if (buttonA.getSingleDebouncedPress()) {
+    knappe_teller += 1;  
+  }
+}
+
+void distanse(){
+  encoder();
+  float Counts = (CountsDiffV + CountsDiffH) / 2;
+  float Distanse = Diameter * Pi * Counts / antall_rotasjon;
+  Speed = Distanse / 0.2;
+  float lengde_kjort_siden_ladning = Diameter * Pi * Counts / antall_rotasjon;
+
+  if (Counts < 0 && batteriet < 100) {
+    batteriet = batteriet - Speed / 2;
+  } else {
+    batteriet = batteriet - Speed / 2;
+  }
+
+  if (Counts > 0) {
+    lengde_kjort = lengde_kjort + Distanse;
+  } else {
+    lengde_kjort = lengde_kjort - Distanse;
+  }
+  forrige_motor_h = motor_h;
+  forrige_motor_v = motor_v;
+}
+
+
+
+void gjennomsnitt_hastighet(){
+encoder();
+distanse();
+tid_kjort = millis()/1000;
+snitt_hastighet = (lengde_kjort) / (tid_kjort);
+}
+
+void skjerm(){
+        display.gotoXY(3,0);
+  display.println(batteriet);
+  display.gotoXY(5,1);  
+  display.println(lengde_kjort);
+  display.gotoXY(0,1);
+  display.println(knappe_teller);
+ 
+}
+
+void batteri_er_tomt(){ 
+    if (batteriet  <=0) {
+      previousMillis = millis();
+      modus = 2;
+    }
+}
+
+void bil_til_ladning(){
+  motors.setSpeeds(0, 0);
+  if (millis() - previousMillis >= interval && batteriet <= 50 && knappe_teller % 2 == 1 ) {
+        previousMillis = millis();
+        modus = 4; 
+      }
+
+else if (millis() - previousMillis >= interval && batteriet <= 50)
+{
+  previousMillis = millis();
+  modus = 1; 
+}
+else if (millis() - previousMillis >= interval && batteriet  >= 90)
+{
+  previousMillis = millis();
+  modus=3;
+}
+}
+
+void bil_hurtig_lader(){
+if (batteriet <= 100 )
+{
+  motors.setSpeeds(-50, -50); 
+  knappe_teller = 0; 
+  batteriet = batteriet + Speed * (-50);
+}
+
+else if (batteriet >= 100 )
+{ 
+  previousMillis = millis();
+  modus=2;
+}
+}
+
+void bil_lader(){
+if (batteriet <= 100 )
+{
+  motors.setSpeeds(-50, -50); 
+  batteriet = batteriet + Speed * (-0.2);
+}
+
+else if (batteriet >= 100 )
+{ 
+  previousMillis = millis();
+  modus=2;
+}
+}
+
+
+void modus_switch(){
+  gjennomsnitt_hastighet();
+  encoder();
+  distanse();
+  knappe_teller_funk();
+  switch (modus)
+  {
+  case 1:
+  bil_lader();
+  break;
+  
+  case 2:  
+  bil_til_ladning();
+  break;
+  
+  case 3:
+   motors.setSpeeds(50, 50);
+   batteri_er_tomt();
+  break;
+
+  case 4:
+  bil_hurtig_lader();
+  break;
+  default:
+   break;
+}
+}
+
+void loop(){
+skjerm();
+modus_switch();
+}
+
