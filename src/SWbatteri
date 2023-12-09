@@ -8,22 +8,11 @@ Zumo32U4Encoders encoders;
 Zumo32U4OLED display; 
 
 int lengde_kjort_siden_ladning = 0;
-int antall_ladninger= 0;
 unsigned long tid_kjort = 0;
-
-const int maxSpeed = 150;
-int lastError = 0;
 int modus= 3; 
 //millis funksjoner forå få kode uten delay
 unsigned long previousMillis = 0; 
-unsigned long previousMillis2 = 0;
-unsigned long previousMillis3 = 0;
-unsigned long previousMillis4 = 0;
-unsigned long previousdisplay = 0;
-
 const long interval = 2000;
-const long interval2 = 3000;
-const long displayinterval = 1500;
 
 //Tall for beregning av lengde
 const float Diameter = 3.5; 
@@ -45,8 +34,6 @@ float snitt_hastighet = 0;
 float Speed = 0;
 
 int knappe_teller = 0; 
-unsigned long lastDebounceTime = 0; 
-unsigned long debounceDelay = 50;
 
 void setup()
 {  
