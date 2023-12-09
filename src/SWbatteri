@@ -39,7 +39,7 @@ float CountsDiffH = 0;
 float snitt_hastighet = 0;
 float charging_constant = 0;
 
-//Tar for seg registrering av knappen.
+//Tar for seg registrering av knappen. 
 int knappe_teller = 0; 
 
 void setup()
