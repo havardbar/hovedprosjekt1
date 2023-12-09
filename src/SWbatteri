@@ -28,10 +28,12 @@ long motor_h = 0;
 long motor_v = 0;
 long forrige_motor_h = 0;
 long forrige_motor_v = 0;
+
+// Funksjoner for å kunne behandle negative Encoder verdier. 
 float CountsDiffV = 0;
 float CountsDiffH = 0;
 float snitt_hastighet = 0;
-float Speed = 0;
+float charging_constant = 0;
 
 int knappe_teller = 0; 
 
@@ -39,12 +41,17 @@ void setup()
 {  
 }
 
-void encoder() {
-  motor_v = encoders.getCountsLeft();
-  motor_h = encoders.getCountsRight();
+//
+// denne blokken her tar for seg Encoderen. Siden det kan oppstå problemer når encoder når max verdi og går i modus
+//er denne funksjonstubben er dedikert til å løse dette problemet.
+
+void encoder() { 
+  motor_v = encoders.getCountsLeft(); //Henter encoder data
+  motor_h = encoders.getCountsRight(); //henter encoder data
   // Beregn Counts og Distanse basert på forskjellen mellom nåværende og forrige verdi
   CountsDiffV = motor_v - forrige_motor_v;
   CountsDiffH = motor_h - forrige_motor_h;
+  //if blokkene under tar for seg verdiene til encoderen avhengig om den er negativ eller ikke. 
   if (CountsDiffV > 30000) {
     CountsDiffV -= 65536;  // Håndter overgangen til negativ verdi
   } else if (CountsDiffV < -30000) {
@@ -57,23 +64,25 @@ void encoder() {
   }
 }
 
+//Funksjon for å få en verdi på knappetrykket A
 void knappe_teller_funk(){
  if (buttonA.getSingleDebouncedPress()) {
     knappe_teller += 1;  
   }
 }
 
+//Denne funksjonstubben handler om å få beregnet  avstand bilen har 
 void distanse(){
   encoder();
   float Counts = (CountsDiffV + CountsDiffH) / 2;
   float Distanse = Diameter * Pi * Counts / antall_rotasjon;
-  Speed = Distanse / 0.2;
+  charging_constant = Distanse / 0.2;
   float lengde_kjort_siden_ladning = Diameter * Pi * Counts / antall_rotasjon;
 
   if (Counts < 0 && batteriet < 100) {
-    batteriet = batteriet - Speed / 2;
+    batteriet = batteriet -charging_constant / 2;
   } else {
-    batteriet = batteriet - Speed / 2;
+    batteriet = batteriet -charging_constant / 2;
   }
 
   if (Counts > 0) {
@@ -86,7 +95,7 @@ void distanse(){
 }
 
 
-
+//Beregner gjennomsnitthastigheten til bilen
 void gjennomsnitt_hastighet(){
 encoder();
 distanse();
@@ -94,6 +103,8 @@ tid_kjort = millis()/1000;
 snitt_hastighet = (lengde_kjort) / (tid_kjort);
 }
 
+
+//Enkel skjerm funksjon
 void skjerm(){
         display.gotoXY(3,0);
   display.println(batteriet);
@@ -104,6 +115,8 @@ void skjerm(){
  
 }
 
+
+//Tar for seg hva som skjer med batteriet når det går tomt
 void batteri_er_tomt(){ 
     if (batteriet  <=0) {
       previousMillis = millis();
@@ -111,48 +124,51 @@ void batteri_er_tomt(){
     }
 }
 
-void bil_til_ladning(){
+void bil_stopper(){  //Sender bil til ladning avhengig 
   motors.setSpeeds(0, 0);
   if (millis() - previousMillis >= interval && batteriet <= 50 && knappe_teller % 2 == 1 ) {
         previousMillis = millis();
-        modus = 4; 
+        modus = 4;  //Hvis knapp A er trykket blir bilen sendt til hurtigladning
       }
 
 else if (millis() - previousMillis >= interval && batteriet <= 50)
 {
   previousMillis = millis();
-  modus = 1; 
+  modus = 1; //Hvis knapp A ikke er trykket blir bilen sendt til vanelig ladning
 }
 else if (millis() - previousMillis >= interval && batteriet  >= 90)
 {
   previousMillis = millis();
-  modus=3;
+  modus=3; //Sender bil tilbake til kjøring
 }
 }
 
-void bil_hurtig_lader(){
-if (batteriet <= 100 )
+//Blokken under tar for seg hvordan bilen skal lade ved hurtigladning. 
+
+void bil_hurtig_lader(){ 
+if (batteriet <= 100 ) //Batteriet er under 100, da skal bilen lade
 {
   motors.setSpeeds(-50, -50); 
   knappe_teller = 0; 
-  batteriet = batteriet + Speed * (-50);
+  batteriet = batteriet +charging_constant * (-50); 
 }
 
-else if (batteriet >= 100 )
+else if (batteriet >= 100 ) //når bilen er ladet til 100 prosent skal bilen sendes til modus 2, som gjør den klar for å kjøre igjen
 { 
   previousMillis = millis();
   modus=2;
 }
 }
 
-void bil_lader(){
-if (batteriet <= 100 )
+//Denne funksjonen tar for seg lading av bil i vanlig modus. 
+void bil_lader(){ 
+if (batteriet <= 100 ) //Hvis batteriet er under 100 prosent lades det
 {
   motors.setSpeeds(-50, -50); 
-  batteriet = batteriet + Speed * (-0.2);
+  batteriet = batteriet +charging_constant * (-0.2);
 }
 
-else if (batteriet >= 100 )
+else if (batteriet >= 100 ) //når batteriet er 100 prosent sendes det til modus 2, som stopper bilen. 
 { 
   previousMillis = millis();
   modus=2;
@@ -172,7 +188,7 @@ void modus_switch(){
   break;
   
   case 2:  
-  bil_til_ladning();
+  bil_stopper();
   break;
   
   case 3:
