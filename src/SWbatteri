@@ -118,25 +118,28 @@ void skjerm(){
 
 //Tar for seg hva som skjer med batteriet når det går tomt
 void batteri_er_tomt(){ 
-    if (batteriet  <=5) {
+    if (batteriet  <=3) { //Hvis batteriet går under 3 prosent så går bilen i lader modus
       previousMillis = millis();
       modus = 2;
     }
 }
 
 void bil_stopper(){  //Sender bil til ladning avhengig 
-  motors.setSpeeds(0, 0);
-  if (millis() - previousMillis >= interval && batteriet <= 50 && knappe_teller % 2 == 1 ) {
-        previousMillis = millis();
+  motors.setSpeeds(0, 0); //Setter speeden til 0 slik at den stopper
+//Sjekker om batteriet er under 50. DEtte gjør den slik at den skjønner at den skal lades opp, å ikke gå i kjøre modus.
+//DEn sjekker også om hurtigladning modus er valgt eller ikke. 
+  if (millis() - previousMillis >= interval && batteriet <= 50 && knappe_teller % 2 == 1 ) { 
+        previousMillis = millis(); //Reseter millis
         modus = 4;  //Hvis knapp A er trykket blir bilen sendt til hurtigladning
       }
 
-else if (millis() - previousMillis >= interval && batteriet <= 50)
+else if (millis() - previousMillis >= interval && batteriet <= 50) 
+//Hvis knapp ikke er trykket og batteriet er under 50 går den til modus 1 som er lading
 {
   previousMillis = millis();
   modus = 1; //Hvis knapp A ikke er trykket blir bilen sendt til vanelig ladning
 }
-else if (millis() - previousMillis >= interval && batteriet  >= 90)
+else if (millis() - previousMillis >= interval && batteriet  >= 90) //Hvis batteriet er over 90 skal den gå til kjøring. For nå vet vi at batteriet har blitt ladet opp
 {
   previousMillis = millis();
   modus=3; //Sender bil tilbake til kjøring
@@ -147,16 +150,16 @@ else if (millis() - previousMillis >= interval && batteriet  >= 90)
 
 void bil_hurtig_lader(){ 
 if (batteriet <= 100 ) //Batteriet er under 100, da skal bilen lade
-{
-  motors.setSpeeds(-50, -50); 
-  knappe_teller = 0; 
-  batteriet = batteriet +charging_constant * (-50); 
+{ 
+  motors.setSpeeds(-50, -50); //Setter en ladningshastighet 
+  knappe_teller = 0;  //Reseter knappeteller
+  batteriet = batteriet +charging_constant * (-50);  //Funksjon for hastigheten til oppladning
 }
 
 else if (batteriet >= 100 ) //når bilen er ladet til 100 prosent skal bilen sendes til modus 2, som gjør den klar for å kjøre igjen
 { 
-  previousMillis = millis();
-  modus=2;
+  previousMillis = millis(); //Reseter previousMillis
+  modus=2; //Sender til stoppefunksjon 
 }
 }
 
@@ -164,40 +167,41 @@ else if (batteriet >= 100 ) //når bilen er ladet til 100 prosent skal bilen sen
 void bil_lader(){ 
 if (batteriet <= 100 ) //Hvis batteriet er under 100 prosent lades det
 {
-  motors.setSpeeds(-50, -50); 
-  batteriet = batteriet +charging_constant * (-0.2);
+  motors.setSpeeds(-50, -50);  //Setter en ladehastighet
+  batteriet = batteriet +charging_constant * (-0.2); //Funksjon for hastigheten til oppladning
 }
 
 else if (batteriet >= 100 ) //når batteriet er 100 prosent sendes det til modus 2, som stopper bilen. 
 { 
-  previousMillis = millis();
-  modus=2;
+  previousMillis = millis(); //Reseter previousMillis
+  modus=2; //Sender bilen til modus 2 som er stans. 
 }
 }
 
 
 void modus_switch(){
-  gjennomsnitt_hastighet();
-  encoder();
-  distanse();
-  knappe_teller_funk();
-  switch (modus)
+  gjennomsnitt_hastighet(); //Funksjon for gjennomsnittshastighet
+  encoder(); //Funksjonen til encoder
+  distanse();//Funksjonen til distanse måling
+  knappe_teller_funk(); //Funksjonen til knappen
+
+  switch (modus) 
   {
-  case 1:
+  case 1: //Dette er modusen som tar for seg oppladning av bil. Oppladningshastigheten er normal. 
   bil_lader();
   break;
-  
-  case 2:  
+   
+  case 2:   //Modusen som får bilen til å stoppe opp mellom switching av kjøring frem og tilbake, og visa verca.  
   bil_stopper();
   break;
   
-  case 3:
+  case 3: //Modusen som sørger for at bilen kjører fremover 
    motors.setSpeeds(50, 50);
    batteri_er_tomt();
   break;
 
   case 4:
-  bil_hurtig_lader();
+  bil_hurtig_lader(); //Dette er modusen som tar for seg hurtigoppladning av bilen. Oppladningshastigheten er høy. 
   break;
   default:
    break;
@@ -205,7 +209,7 @@ void modus_switch(){
 }
 
 void loop(){
-skjerm();
-modus_switch();
+skjerm(); //Skjermfunksjoner 
+modus_switch(); //Switchen. 
 }
 
