@@ -118,7 +118,7 @@ void skjerm(){
 
 //Tar for seg hva som skjer med batteriet når det går tomt
 void batteri_er_tomt(){ 
-    if (batteriet  <=0) {
+    if (batteriet  <=5) {
       previousMillis = millis();
       modus = 2;
     }
