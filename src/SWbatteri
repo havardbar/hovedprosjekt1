@@ -7,21 +7,25 @@ Zumo32U4ButtonA buttonA;
 Zumo32U4Encoders encoders;
 Zumo32U4OLED display; 
 
-int lengde_kjort_siden_ladning = 0;
-unsigned long tid_kjort = 0;
-int modus= 3; 
+
+
+//Setter switch case til modus tre som default
+int modus= 3;
+
 //millis funksjoner forå få kode uten delay
 unsigned long previousMillis = 0; 
-const long interval = 2000;
 
 //Tall for beregning av lengde
 const float Diameter = 3.5; 
 const int   antall_rotasjon = 910;  // Tall  
 const float Pi = 3.14159; 
+int lengde_kjort_siden_ladning = 0; 
+unsigned long tid_kjort = 0; //Tidsfunksjon for å beregne gjennomsnittshastighet.
 
 //Tall for beregning av batterietet 
 float batteriet = 100;
 float lengde_kjort = 0;
+const long interval = 2000;
 
 //Startverdi for motoren
 long motor_h = 0;
@@ -35,6 +39,7 @@ float CountsDiffH = 0;
 float snitt_hastighet = 0;
 float charging_constant = 0;
 
+//Tar for seg registrering av knappen.
 int knappe_teller = 0; 
 
 void setup()
@@ -72,23 +77,23 @@ void knappe_teller_funk(){
 }
 
 //Denne funksjonstubben handler om å få beregnet  avstand bilen har 
-void distanse(){
+void distanse(){ 
   encoder();
   float Counts = (CountsDiffV + CountsDiffH) / 2;
-  float Distanse = Diameter * Pi * Counts / antall_rotasjon;
-  charging_constant = Distanse / 0.2;
-  float lengde_kjort_siden_ladning = Diameter * Pi * Counts / antall_rotasjon;
+  float Distanse = Diameter * Pi * Counts / antall_rotasjon; //bergegner lengdekjørt
+  charging_constant = Distanse / 0.2; //Hvor fort bilen skal lade
+  float lengde_kjort_siden_ladning = Diameter * Pi * Counts / antall_rotasjon; //Beregner lengden kjørt utifra encoderen sine verdier og diameter på beltet
 
-  if (Counts < 0 && batteriet < 100) {
-    batteriet = batteriet -charging_constant / 2;
+  if (Counts < 0 && batteriet < 100) { //behandler de negative verdiene slik at batteriet ikke går i negative verdi ved negativ counts. 
+    batteriet = batteriet - charging_constant / 2;  //Batteriet går nedover 
   } else {
-    batteriet = batteriet -charging_constant / 2;
+    batteriet = batteriet + charging_constant / 2; //Batteriet går nedover
   }
 
-  if (Counts > 0) {
-    lengde_kjort = lengde_kjort + Distanse;
+  if (Counts > 0) { //Behandler porsitive verdier av Counts
+    lengde_kjort = lengde_kjort + Distanse; //Sørger for at distansen 
   } else {
-    lengde_kjort = lengde_kjort - Distanse;
+    lengde_kjort = lengde_kjort - Distanse; //Sørger for at distansen ikke blir negativ ved negative counts verdier. 
   }
   forrige_motor_h = motor_h;
   forrige_motor_v = motor_v;
