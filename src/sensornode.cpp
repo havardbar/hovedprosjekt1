@@ -41,13 +41,13 @@ ultrasonisk = sonar.ping_cm();
 void rodt_lys(){
   if (trykksensor >= 100 &&  ultrasonisk >= 100  )
   {
-    digitalWrite(GREEN,LOW);
-    digitalWrite(RED, HIGH);
+    digitalWrite(GREEN,HIGH);
+    digitalWrite(RED, LOW);
     delay (8000);
     }
 else {
-digitalWrite(GREEN,HIGH);
-digitalWrite(RED, LOW);
+digitalWrite(GREEN,LOW);
+digitalWrite(RED, HIGH);
 }
 }
 
