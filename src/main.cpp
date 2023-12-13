@@ -666,16 +666,16 @@ void distanse()
   float Counts = ((CountsDiffV + CountsDiffH) / 2);
 
   float Distanse = Diameter * Pi * Counts / antall_rotasjon; // bergegner lengdekjørt
-  charging_constant = Distanse / 0.2;                        // Hvor fort bilen skal lade
+  charging_constant = Distanse / 0.4;                        // Hvor fort bilen skal lade
   // float lengde_kjort_siden_ladning = Diameter * Pi * Counts / antall_rotasjon; //Beregner lengden kjørt utifra encoderen sine verdier og diameter på beltet
 
   if (Counts < 0 && batteriet < 100)
   {                                                 // behandler de negative verdiene slik at batteriet ikke går i negative verdi ved negativ counts.
-    batteriet = batteriet - charging_constant / 10; // Batteriet går nedover
+    batteriet = batteriet - charging_constant / 18; // Batteriet går nedover
   }
   else
   {
-    batteriet = batteriet - charging_constant / 10; // Batteriet går nedover
+    batteriet = batteriet - charging_constant / 18; // Batteriet går nedover
   }
   batteriet = constrain(batteriet, 0, 100);
 
@@ -813,9 +813,9 @@ void show()
   display.gotoXY(0, 1);
   display.println(knappe_teller);
   display.gotoXY(5, 3);
-  display.println(motor_h);
-  display.gotoXY(0, 3);
-  display.println(motor_v);
+  display.println(mode);
+ // display.gotoXY(0, 3);
+ // display.println(motor_v);
 }
 
 void loop()
