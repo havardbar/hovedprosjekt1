@@ -86,8 +86,6 @@ int16_t right_speed1; // verdi av fart med D
 int16_t lastError;
 int16_t error; // lagre hvor langt unna man er streken
 
-float integral;
-
 int rounds_N; // telle runder
 
 float speed = 400.0;     // standarfart
@@ -463,26 +461,6 @@ void steeringPID()
   right_speed1 = constrain(right_speed1, 0, (int16_t)speed);
 
   motors.setSpeeds(left_speed1, right_speed1); // setter fart på motor
-}
-
-// dårlig versjiion av pid men kan kanskje forbedres
-void badPID()
-{
-
-  error = position - 2000;
-
-  int16_t speedDifference = error * 0.25 + (error - lastError) * 3 + integral * 0.001;
-
-  integral += error;
-  lastError = error;
-
-  left_speed1 = (int16_t)speed + speedDifference;
-  right_speed1 = (int16_t)speed - speedDifference;
-
-  left_speed1 = constrain(left_speed1, 0, (int16_t)speed);
-  right_speed1 = constrain(right_speed1, 0, (int16_t)speed);
-
-  motors.setSpeeds(left_speed1, right_speed1);
 }
 
 // styring uten PID
