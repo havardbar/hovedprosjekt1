@@ -1,0 +1,171 @@
+// Zumo32U4
+
+#include <Wire.h>
+#include <Zumo32U4.h>
+
+Zumo32U4Motors motors;
+Zumo32U4ButtonC buttonC;
+Zumo32U4Encoders encoders;
+Zumo32U4OLED display; 
+
+
+
+int lengde_kjort_siden_ladning = 0;
+int antall_ladninger= 0;
+unsigned long tid_kjort = 0;
+
+
+const int maxSpeed = 150;
+int lastError = 0;
+int batteri = 0;
+int teller = 0;
+int modus= 0; 
+
+//millis funksjoner forå få kode uten delay
+unsigned long previousMillis = 0; 
+unsigned long previousMillis2 = 0;
+unsigned long previousMillis3 = 0;
+unsigned long previousMillis4 = 0;
+unsigned long previousdisplay = 0;
+
+
+const long interval = 4000;
+const long interval2 = 1500;
+const long interval3 = 1600;
+const long displayinterval = 1500;
+
+//Tall for beregning av lengde
+const float Diameter = 3.5; 
+const int   antall_rotasjon = 910;  // Tall  
+const float Pi = 3.14159; 
+
+//Tall for beregning av batterietet 
+float batteriet = 100;
+
+float lengde_kjort = 0;
+
+
+//Startverdi for motoren
+long motor_h = 0;
+long motor_v = 0;
+long forrige_motor_h = 0;
+long forrige_motor_v = 0;
+
+
+void utladning() {
+  motor_v = encoders.getCountsLeft();
+  motor_h = encoders.getCountsRight();
+  
+  // Beregn Counts og Distanse basert på forskjellen mellom nåværende og forrige verdi
+  float CountsDiffV = motor_v - forrige_motor_v;
+  float CountsDiffH = motor_h - forrige_motor_h;
+
+  if (CountsDiffV > 30000) {
+    CountsDiffV -= 65536;  // Håndter overgangen til negativ verdi
+  } else if (CountsDiffV < -30000) {
+    CountsDiffV += 65536;  // Håndter overgangen til positiv verdi
+  }
+
+  if (CountsDiffH > 30000) {
+    CountsDiffH -= 65536;  // Håndter overgangen til negativ verdi
+  } else if (CountsDiffH < -30000) {
+    CountsDiffH += 65536;  // Håndter overgangen til positiv verdi
+  }
+
+  float Counts = (CountsDiffV + CountsDiffH) / 2;
+  float Distanse = Diameter * Pi * Counts / antall_rotasjon;
+  float Speed = Distanse / 0.2;
+  float lengde_kjort_siden_ladning = Diameter * Pi * Counts / antall_rotasjon;
+
+  if (Counts < 0 && batteriet < 100) {
+    batteriet = batteriet - Speed / 20;
+  } else {
+    batteriet = batteriet - Speed / 10;
+  }
+
+  if (Counts > 0) {
+    lengde_kjort = lengde_kjort + Distanse;
+  } else {
+    lengde_kjort = lengde_kjort - Distanse;
+  }
+
+  forrige_motor_h = motor_h;
+  forrige_motor_v = motor_v;
+}
+
+void gjennomsnitt_hastighet(){
+utladning();
+tid_kjort = millis()/1000;
+float snitt_hastighet = (lengde_kjort) / (tid_kjort);
+ unsigned long displaymillis = millis() ;
+    if (displaymillis - previousdisplay >= displayinterval) {
+      display.clear();
+      display.print(batteriet);
+      display.gotoXY(0, 1);
+      display.print(snitt_hastighet);
+      previousdisplay = displaymillis;
+      delay(100);
+}
+}
+
+
+void battery_is_empty() {
+utladning();
+gjennomsnitt_hastighet();
+motors.setSpeeds(50, 50); 
+unsigned long currentMillis = millis();
+if (currentMillis - previousMillis3 >= interval3) 
+    {
+      previousMillis2 = currentMillis;
+      previousMillis3 = currentMillis;      
+    }
+
+    if (batteriet  <=0 && teller == 0) {
+  
+    motors.setSpeeds(0, 0);
+    if (currentMillis - previousMillis2 >= interval2) {
+      teller += 1;
+      previousMillis2 = currentMillis;
+      previousMillis = currentMillis;
+    }
+  } else if (teller == 1) {
+    motors.setSpeeds(-50, -50);
+
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      batteri += 1;
+      teller -= 1;
+      previousMillis2 = currentMillis;
+      previousMillis = currentMillis;
+    }
+  } else if (batteri >= 1) {
+    motors.setSpeeds(0, 0);
+    unsigned long currentMillis = millis() ;
+    if (currentMillis - previousMillis >= interval2) {
+      batteri -= 1;
+      previousMillis2 = currentMillis;
+      previousMillis = currentMillis;
+      batteriet =100;
+      antall_ladninger +=1; 
+      lengde_kjort_siden_ladning = lengde_kjort; 
+}
+  }
+
+}
+
+
+void setup() {
+  // Initialiser eventuelle oppsett her
+}
+
+void loop() {
+
+ gjennomsnitt_hastighet();
+
+ utladning();
+ battery_is_empty();
+
+  
+}
+     
+   
